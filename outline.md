@@ -31,7 +31,7 @@
         * both host and device can append operation to the command queue
         * the command queue can be executed out of order on some supported platforms if specified
 
-# Hardware mapping (overview, skip through the details)
+# Hardware mapping
 
 OpenCL is designed to run on top of devices with various form factors, such as CPU, GPU, FPGA or ASIC. However, to fully utilize the potential of the particular platform, it is up to the programmer to exploit the special hardwares present in each individual device.
 

@@ -1,26 +1,14 @@
 #define CL_TARGET_OPENCL_VERSION 220
 
 #include <iostream>
+#include <sstream>
+#include <fstream>
 #include <vector>
 #include <string>
 
 #define __CL_ENABLE_EXCEPTIONS
 #include <CL/cl.hpp>
 
-// Compute c = a + b.
-static const char source[] =
-    "kernel void add(\n"
-    "       ulong n,\n"
-    "       global const float *a,\n"
-    "       global const float *b,\n"
-    "       global float *c\n"
-    "       )\n"
-    "{\n"
-    "    size_t i = get_global_id(0);\n"
-    "    if (i < n) {\n"
-    "       c[i] = a[i] + b[i];\n"
-    "    }\n"
-    "}\n";
 
 int main() {
     const size_t N = 1 << 20;
@@ -61,14 +49,23 @@ int main() {
         return 1;
       }
 
-      std::cout << device[0].getInfo<CL_DEVICE_NAME>() << std::endl;
+      std::cout << "Device found: " << device[0].getInfo<CL_DEVICE_NAME>() << std::endl;
 
       // Create command queue.
       cl::CommandQueue queue(context, device[0]);
 
-      // Compile OpenCL program for found device.
+      // Read and compile OpenCL program for found device.
+      std::ifstream srcStream("./kernels/add.cl");
+      if (!srcStream.good()) {
+        throw std::runtime_error{"unable to read kernel"};
+      }
+
+      std::stringstream src;
+      src << srcStream.rdbuf();
+      std::string srcStr = src.str();
+
       cl::Program program(context, cl::Program::Sources(
-            1, std::make_pair(source, strlen(source))
+            1, std::make_pair(srcStr.c_str(), srcStr.length())
             ));
 
       try {

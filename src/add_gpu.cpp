@@ -9,52 +9,56 @@
 #define __CL_ENABLE_EXCEPTIONS
 #include <CL/cl.hpp>
 
+#include "./utils.hpp"
 
 int main() {
-    const size_t N = 1 << 20;
+    const size_t N = 1 << 25;
 
     try {
       // Get list of OpenCL platforms.
-      std::vector<cl::Platform> platform;
-      cl::Platform::get(&platform);
+      std::vector<cl::Platform> platforms;
+      cl::Platform::get(&platforms);
 
-      if (platform.empty()) {
-          std::cerr << "OpenCL platforms not found." << std::endl;
+      if (platforms.empty()) {
+          std::cerr << "OpenCL platformss not found." << std::endl;
           return 1;
       }
 
       cl::Context context;
-      std::vector<cl::Device> device;
+      std::vector<cl::Device> devices;
 
-      for(auto p = platform.begin(); device.empty() && p != platform.end(); p++) {
+      for(auto p : platforms) {
+        if (!devices.empty()) {
+          break;
+        }
         std::vector<cl::Device> pldev;
 
         try {
-          p->getDevices(CL_DEVICE_TYPE_GPU, &pldev);
+          p.getDevices(CL_DEVICE_TYPE_GPU, &pldev);
 
-          for (auto d = pldev.begin(); device.empty() && d != pldev.end(); d++) {
+          for (auto d = pldev.begin(); devices.empty() && d != pldev.end(); d++) {
             if (!d->getInfo<CL_DEVICE_AVAILABLE>()) continue;
 
             std::string ext = d->getInfo<CL_DEVICE_EXTENSIONS>();
-            device.push_back(*d);
-            context = cl::Context(device);
+            devices.push_back(*d);
+            context = cl::Context(devices);
           }
         } catch (...) {
-          device.clear();
+          devices.clear();
         }
       }
 
-      if (device.empty()) {
+      if (devices.empty()) {
         std::cerr << "GPU not found." << std::endl;
         return 1;
       }
 
-      std::cout << "Device found: " << device[0].getInfo<CL_DEVICE_NAME>() << std::endl;
+      std::cout << "Device found: " << devices[0].getInfo<CL_DEVICE_NAME>() << std::endl;
 
       // Create command queue.
-      cl::CommandQueue queue(context, device[0]);
+      cl::CommandQueue queue(context, devices[0]);
 
-      // Read and compile OpenCL program for found device.
+      // Read and compile OpenCL program for found devices.
       std::ifstream srcStream("./kernels/add.cl");
       if (!srcStream.good()) {
         throw std::runtime_error{"unable to read kernel"};
@@ -69,11 +73,11 @@ int main() {
             ));
 
       try {
-        program.build(device);
+        program.build(devices);
       } catch (const cl::Error&) {
         std::cerr
           << "OpenCL compilation error" << std::endl
-          << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device[0])
+          << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(devices[0])
           << std::endl;
         return 1;
       }
@@ -84,6 +88,9 @@ int main() {
       std::vector<float> a(N, 1);
       std::vector<float> b(N, 2);
       std::vector<float> c(N);
+
+      struct timespec start, end;
+      clock_gettime(CLOCK_MONOTONIC, &start);
 
       // Allocate device buffers and transfer input data to device.
       cl::Buffer A(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
@@ -107,8 +114,11 @@ int main() {
       // Get result back to host.
       queue.enqueueReadBuffer(C, CL_TRUE, 0, c.size() * sizeof(float), c.data());
 
+      clock_gettime(CLOCK_MONOTONIC, &end);
+      print_timediff("computation time: ", start, end);
+
       // Should get '3' here.
-      std::cout << c[42] << std::endl;
+      std::cout << "result: " << c[42] << std::endl;
     } catch (const cl::Error &err) {
       std::cerr
           << "OpenCL error: "

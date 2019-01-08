@@ -14,7 +14,7 @@ int main() {
   clock_gettime(CLOCK_MONOTONIC, &start);
 
   for (size_t i=0; i<N; ++i) {
-    C[i] = A[i] + B[i];
+    C[i] = A[i] * A[i] * B[i] - B[i] * B[i];
   }
 
   clock_gettime(CLOCK_MONOTONIC, &end);

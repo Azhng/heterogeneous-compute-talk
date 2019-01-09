@@ -39,7 +39,6 @@ int main() {
           for (auto d = pldev.begin(); devices.empty() && d != pldev.end(); d++) {
             if (!d->getInfo<CL_DEVICE_AVAILABLE>()) continue;
 
-            std::string ext = d->getInfo<CL_DEVICE_EXTENSIONS>();
             devices.push_back(*d);
             context = cl::Context(devices);
           }

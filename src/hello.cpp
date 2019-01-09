@@ -31,12 +31,11 @@ int main() {
         std::vector<cl::Device> pldev;
 
         try {
-          p.getDevices(CL_DEVICE_TYPE_GPU, &pldev);
+          p.getDevices(CL_DEVICE_TYPE_ALL, &pldev);
 
           for (auto d = pldev.begin(); devices.empty() && d != pldev.end(); d++) {
             if (!d->getInfo<CL_DEVICE_AVAILABLE>()) continue;
 
-            std::string ext = d->getInfo<CL_DEVICE_EXTENSIONS>();
             devices.push_back(*d);
             context = cl::Context(devices);
           }

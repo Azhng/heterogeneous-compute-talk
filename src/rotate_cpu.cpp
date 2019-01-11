@@ -1,12 +1,14 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <math.h>
+#include <cstdint>
+#include <cstdio>
+#include <cmath>
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
 #include <stb_image.h>
 #include <stb_image_write.h>
+
+#include "./utils.hpp"
 
 int main() {
   int width, height, bpp;
@@ -15,6 +17,9 @@ int main() {
   uint8_t* img = stbi_load("./resources/cat.jpg", &width, &height, &bpp, 1);
   uint8_t* output = (uint8_t*)malloc(sizeof(uint8_t) * width * height);
   memset(output, 0, width * height);
+
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC, &start);
 
   int x0 = width / 2;
   int y0 = -height / 2;
@@ -36,6 +41,9 @@ int main() {
     }
     //printf("\n");
   }
+
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  print_timediff("computation time: ", start, end);
 
   stbi_write_png("out_cpu.png", width, height, 1, output, width);
 

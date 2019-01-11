@@ -10,7 +10,7 @@ include_directories(${OpenCL_INCLUDE_DIRS})
 
 add_executable(add_gpu add_gpu.cpp)
 add_executable(add_cpu add_cpu.cpp)
-add_executable(rotate_cpu rotate_cpu.c)
+add_executable(rotate_cpu rotate_cpu.cpp)
 add_executable(rotate_gpu rotate_gpu.cpp)
 add_executable(hello hello.cpp)
 

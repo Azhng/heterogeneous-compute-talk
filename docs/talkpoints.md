@@ -32,14 +32,32 @@ OpenCL - Open Computing Language. What OpenCL provides is in fact a concrete def
 * // source code walk through of add_gpu.cpp
 
 ## Hardware mapping
+* Key ideas:
+  * Work items
+    * An instance of the kernel that is being executed on the device
+    * Usually dispatched in large numbers
+    * Communication between work items are intentially limited for better scalability
+  * NDRange
+    * N-dimentional range
+    * Represents total number of work items
+  * Work group
+    * A subset of the global work group that can be mapped to a computation unit
+    * AMD GPU's CU
+    * A x86 Core
+    * Nvidia SM cluster
 * CPU
+  * Each work group is assigned to a CPU thread
+  * The CPU thread will sequentially execute each individual work item in the work group until synchronization point
 * GPU
+  * Varies vendor from vendor
+  * Number of Stream processors (CUDA core in Nvidia's case) are group into a CU (Computation Unit), which is directly mapped to a work group
+  * Each SM can execute as if it has its own program counter until synchronization point
 
 ### Demo #2
-Blackbox demo: image rotation probably
+Image rotation
 
 
-// ========================================================= //
+// ================== Legacy Stuff ============================= //
 ### host-device architecture
 * host and device are abstracted concept rather than a concrete one.
 * Host

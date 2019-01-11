@@ -1,5 +1,20 @@
-# Introduction to OpenCL
+# Introduction to Heterogeneous Computing
 
-_WIP_
+Talk slide [link](https://docs.google.com/presentation/d/18HCdxBnlxYUKSPgIGO4HGV6BKZPRFhG8Meaa-DfUARg/edit?usp=sharing)
 
-This repository containing code and other materials in my StarterHack talk.
+## Build instruction:
+
+```bash
+cd /path/to/project/root
+mkdir build
+cd build
+cmake ..
+make
+```
+
+This builds 5 executables:
+* `hello` => a simple hello world example
+* `add_cpu` => perform arithmetic operations on a large array using CPU
+* `add_gpu` => perform same operation using GPU
+* `rotate_cpu` => rotate an image using CPU
+* `rotate_gpu` => same operation using GPU

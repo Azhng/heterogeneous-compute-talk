@@ -93,7 +93,7 @@ int main() {
       char data[13];
       queue.enqueueReadBuffer(S, CL_TRUE, 0, 13 * sizeof(char), data);
 
-      // Should get '3' here.
+      // Should get '-2' here.
       std::cout << data << std::endl;
     } catch (const cl::Error &err) {
       std::cerr

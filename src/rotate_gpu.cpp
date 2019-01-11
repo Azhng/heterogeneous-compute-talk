@@ -9,8 +9,15 @@
 #define __CL_ENABLE_EXCEPTIONS
 #include <CL/cl.hpp>
 
-int main() {
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 
+#include <stb_image.h>
+#include <stb_image_write.h>
+
+#include "./utils.hpp"
+
+int main() {
     try {
       // Get list of OpenCL platforms.
       std::vector<cl::Platform> platforms;
@@ -31,11 +38,12 @@ int main() {
         std::vector<cl::Device> pldev;
 
         try {
-          p.getDevices(CL_DEVICE_TYPE_ALL, &pldev);
+          p.getDevices(CL_DEVICE_TYPE_GPU, &pldev);
 
           for (auto d = pldev.begin(); devices.empty() && d != pldev.end(); d++) {
             if (!d->getInfo<CL_DEVICE_AVAILABLE>()) continue;
 
+            std::string ext = d->getInfo<CL_DEVICE_EXTENSIONS>();
             devices.push_back(*d);
             context = cl::Context(devices);
           }
@@ -55,7 +63,7 @@ int main() {
       cl::CommandQueue queue(context, devices[0]);
 
       // Read and compile OpenCL program for found devices.
-      std::ifstream srcStream("./kernels/hello.cl");
+      std::ifstream srcStream("./kernels/rotate.cl");
       if (!srcStream.good()) {
         throw std::runtime_error{"unable to read kernel"};
       }
@@ -78,23 +86,69 @@ int main() {
         return 1;
       }
 
-      cl::Kernel add(program, "hello");
+      cl::Kernel rotate(program, "rotation");
 
-      // Allocate device buffers and transfer input data to device.
-      cl::Buffer S(context, CL_MEM_READ_WRITE, 13 * sizeof(char));
+      // Prepare input data.
+      int width, height, bpp;
+
+      float* inputImageRaw = stbi_loadf("./resources/cat.jpg", &width, &height, &bpp, 1);
+      cl::Image2D inputImage(context,
+          CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+          cl::ImageFormat(CL_R, CL_FLOAT),
+          width,
+          height,
+          0,
+          (void*)inputImageRaw);
+
+      cl::Image2D outputImage(context,
+          CL_MEM_WRITE_ONLY,
+          cl::ImageFormat(CL_R, CL_FLOAT),
+          width,
+          height,
+          0,
+          nullptr);
 
       // Set kernel parameters.
-      add.setArg(0, S);
+      cl_int status;
+      status = rotate.setArg(0, inputImage);
+      status |= rotate.setArg(1, outputImage);
+      status |= rotate.setArg(2, width);
+      status |= rotate.setArg(3, height);
+      status |= rotate.setArg(4, 45.0f);
+
+      if (status) {
+        throw std::runtime_error{"unable to set argument"};
+      }
+
+      struct timespec start, end;
+      clock_gettime(CLOCK_MONOTONIC, &start);
 
       // Launch kernel on the compute device.
-      queue.enqueueNDRangeKernel(add, cl::NullRange, 4, 2);
+      queue.enqueueNDRangeKernel(rotate, cl::NullRange, cl::NDRange(width, height), cl::NDRange(8, 8));
 
       // Get result back to host.
-      char data[13];
-      queue.enqueueReadBuffer(S, CL_TRUE, 0, 13 * sizeof(char), data);
+      float* outputRaw = (float*)malloc(sizeof(float) * width * height);
 
-      // Should get '3' here.
-      std::cout << data << std::endl;
+      // who the hell designed this stupid fucking API
+      cl::size_t<3> origin;
+      origin[0] = 0;
+      origin[1] = 0;
+      origin[2] = 0;
+
+      cl::size_t<3> region;
+      region[0] = width;
+      region[1] = height;
+      region[2] = 1;
+
+      queue.enqueueReadImage(outputImage, CL_TRUE, origin, region, 0, 0, outputRaw);
+
+      clock_gettime(CLOCK_MONOTONIC, &end);
+      print_timediff("computation time: ", start, end);
+
+      stbi_write_hdr("out_gpu.hdr", width, height, 1, outputRaw);
+
+      free(outputRaw);
+      stbi_image_free(inputImageRaw);
     } catch (const cl::Error &err) {
       std::cerr
           << "OpenCL error: "
@@ -102,4 +156,5 @@ int main() {
           << std::endl;
       return 1;
     }
+  return 0;
 }

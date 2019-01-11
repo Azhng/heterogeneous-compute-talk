@@ -32,12 +32,12 @@ int main() {
         continue;
       }
       //printf("x: %d, y: %d - ", x, y);
-      omat[y][x] = mat[row][col];
+      omat[row][col] = mat[y][x];
     }
     //printf("\n");
   }
 
-  stbi_write_png("out.png", width, height, 1, output, width);
+  stbi_write_png("out_cpu.png", width, height, 1, output, width);
 
   free(output);
   stbi_image_free(img);

@@ -124,5 +124,5 @@ int main() {
           << err.what() << "(" << err.err() << ")"
           << std::endl;
       return 1;
-  }
+    }
 }
